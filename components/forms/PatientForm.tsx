@@ -13,6 +13,7 @@ import SubmitButton from "../SubmitButton"
 import { useState } from "react"
 import { UserFormValidation } from "@/lib/vaildation"
 import { useRouter } from "next/navigation"
+import { createUser } from "@/lib/actions/patient.action"
 
 
 
@@ -35,16 +36,16 @@ const PatientForm = () => {
     setIsLoading(true)
 
     try {
-        // const userData = {name,email,phone}
-        // const user = createUser(userData)
-        // if (user) router.push(`/patients/${user.$id}/register`)
+        const userData = {name,email,phone}
+        const user = await createUser(userData)
+        if (user) router.push(`/patients/${user.$id}/register`)
 
     } catch (error) {
         console.error(error);
         
     }
+    setIsLoading(false)
   }
-  // ...
 
   return (
     <Form {...form}>
