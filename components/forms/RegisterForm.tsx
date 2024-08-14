@@ -7,12 +7,12 @@ import { Form, FormControl } from "@/components/ui/form"
 import CustomFormField, { FormFieldType } from "../CustomFormField"
 import SubmitButton from "../SubmitButton"
 import { useState } from "react"
-import { UserFormValidation } from "@/lib/vaildation"
+import { PatientFormValidation } from "@/lib/vaildation"
 import { useRouter } from "next/navigation"
-import { createUser } from "@/lib/actions/patient.action"
+import { registerPatient } from "@/lib/actions/patient.action"
 import { User } from "@/types"
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group"
-import { Doctors, GenderOptions, IdentificationTypes } from "@/constents"
+import { Doctors, GenderOptions, IdentificationTypes, PatientFormDefaultValues } from "@/constents"
 import { Label } from "../ui/label"
 import Image from "next/image"
 import { SelectItem } from "../ui/select"
@@ -24,9 +24,10 @@ const RegisterForm = ({ user }: { user: User }) => {
     const [isLoading, setIsLoading] = useState(false)
     const router = useRouter()
     // 1. Define your form.
-    const form = useForm<z.infer<typeof UserFormValidation>>({
-        resolver: zodResolver(UserFormValidation),
+    const form = useForm<z.infer<typeof PatientFormValidation>>({
+        resolver: zodResolver(PatientFormValidation),
         defaultValues: {
+            ...PatientFormDefaultValues,
             name: "",
             email: "",
             phone: "",
@@ -35,14 +36,29 @@ const RegisterForm = ({ user }: { user: User }) => {
     })
 
     // 2. Define a submit handler.
-    async function onSubmit({ name, email, phone }: z.infer<typeof UserFormValidation>) {
+    async function onSubmit(values: z.infer<typeof PatientFormValidation>) {
         setIsLoading(true)
 
+        let formData;
+        if (values.identificationDocument && values.identificationDocument.length > 0) {
+            const blobFile = new Blob([values.identificationDocument[0].name],{
+                type: values.identificationDocument[0].type,
+            })
+             formData = new FormData()
+             formData.append('blobFile', blobFile);
+             formData.append('fileName', values.identificationDocument[0].name);
+        }
         try {
-            const userData = { name, email, phone }
-            const user = await createUser(userData)
-            if (user) router.push(`/patients/${user.$id}/register`)
-
+           const patientData = {
+            ...values,
+            userId: user.$id,
+            birthDate: new Date(values.birthDate),
+            identificationDocument: formData,
+           }
+           //@ts-ignore
+           const patient = await registerPatient(patientData)
+           
+           if(patient) router.push(`/patients/${user.$id}/new-appointment`)
         } catch (error) {
             console.error(error);
 
@@ -56,6 +72,11 @@ const RegisterForm = ({ user }: { user: User }) => {
                 <section className="space-y-4">
                     <h1 className="header">Welcome 👋</h1>
                     <p className="text-dark-700">Let us know more about yourself.</p>
+                </section>
+                <section className=" space-y-6">
+                    <div className="mb-9 space-y-1">
+                        <h2 className="sub-header">Personal Information</h2>
+                    </div>
                 </section>
 
                 {/* name */}
@@ -130,14 +151,14 @@ const RegisterForm = ({ user }: { user: User }) => {
                 </div>
 
                 <div className="flex flex-col gap-6 xl:flex-row">
-                    <CustomFormField control={form.control} name='allergies' label="Allergies (if any)" placeholder="Penicillin, Pollen" fieldType={FormFieldType.TEXTAREA} />
+                    <CustomFormField control={form.control} name='allergies' label="Allergies (if any)" placeholder="ex:Penicillin, Pollen" fieldType={FormFieldType.TEXTAREA} />
                     <CustomFormField control={form.control} name='currentMedications' label="Current medications" placeholder="ex: metals-500,dolo-600mg" fieldType={FormFieldType.TEXTAREA} />
 
                 </div>
 
                 <div className="flex flex-col gap-6 xl:flex-row">
-                    <CustomFormField control={form.control} name='familyMedicalHistory' label="Family medical history(if relevant)" placeholder="Mother had brain cancer, Father has hypertension" fieldType={FormFieldType.TEXTAREA} />
-                    <CustomFormField control={form.control} name='pastMedicalHistory' label="Past medical history" placeholder="Appendectomy in 2015, Asthma diagnosis in childhood" fieldType={FormFieldType.TEXTAREA} />
+                    <CustomFormField control={form.control} name='familyMedicalHistory' label="Family medical history(if relevant)" placeholder="ex:Mother had brain cancer, Father has hypertension" fieldType={FormFieldType.TEXTAREA} />
+                    <CustomFormField control={form.control} name='pastMedicalHistory' label="Past medical history" placeholder="ex:Appendectomy in 2015, Asthma diagnosis in childhood" fieldType={FormFieldType.TEXTAREA} />
 
                 </div>
 

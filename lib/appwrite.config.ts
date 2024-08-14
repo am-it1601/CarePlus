@@ -1,6 +1,6 @@
 import * as sdk from 'node-appwrite';
 
-const { PROJECT_ID,
+export const { PROJECT_ID,
     API_KEY,
     DATABASE_ID,
     PATIENT_COLLECTION_ID,
