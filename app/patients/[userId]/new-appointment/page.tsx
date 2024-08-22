@@ -2,14 +2,16 @@ import AppointmentForm from '@/components/forms/AppointmentForm'
 import { getPatient } from '@/lib/actions/patient.action'
 import { SearchParamProps } from '@/types'
 import Image from 'next/image'
-
+import * as Sentry from '@sentry/nextjs'
 
 const NewAppointment = async ({ params: { userId } }: SearchParamProps) => {
 
   const patient = await getPatient(userId)
+  
+  Sentry.metrics.set('user_view_new-appointment', patient.name)
   return (
     <div className='flex h-screen max-h-screen'>
-      {/* otp verification */}
+
       <section className='remove-scrollbar container my-auto'>
         <div className="sub-container max-w-[860px] flex-1 justify-between">
           <Image src='/assets/icons/logo-full.svg' alt='logo' height={1000} width={1000} className='mb-12 h-10 w-fit' />
@@ -17,8 +19,7 @@ const NewAppointment = async ({ params: { userId } }: SearchParamProps) => {
           <AppointmentForm
             type='create'
             userId={userId}
-            patientId={patient.$id}
-            // appointment={''}
+            patientId={patient?.$id}            
           />
 
           <p className="copyright mt-10 py-12">

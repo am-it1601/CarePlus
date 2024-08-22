@@ -8,7 +8,6 @@ import { InputFile } from "node-appwrite/file";
 export const createUser = async (user: CreateUserParams) => {
     try {
         const newUser = await users.create(ID.unique(), user.email, user.phone, undefined, user.name)
-        console.log({ newUser });
 
         return parseStringify(newUser)
 
@@ -19,6 +18,7 @@ export const createUser = async (user: CreateUserParams) => {
             ])
             return existingUser?.users[0]
         }
+        console.error("An error occurred while creating a new user:", error);
     }
 
 };
@@ -28,7 +28,10 @@ export const getUser = async (userId: string) => {
         const user = await users.get(userId)
         return parseStringify(user)
     } catch (error) {
-        console.error(error);
+        console.error(
+            "An error occurred while retrieving the user details:",
+            error
+        );
 
     }
 };
@@ -38,7 +41,7 @@ export const getPatient = async (userId: string) => {
         const patients = await database.listDocuments(
             DATABASE_ID!,
             PATIENT_COLLECTION_ID!,
-            [Query.equal('userId',userId)]
+            [Query.equal('userId', userId)]
         )
         return parseStringify(patients.documents[0])
     } catch (error) {
@@ -64,8 +67,7 @@ export const registerPatient = async ({ identificationDocument, ...patient }: Re
                 identificationDocumentUrl: `${ENDPOINT}/storage/buckets/${BUCKET_ID}/files/${file?.$id}/view?.project=${PROJECT_ID}`,
                 ...patient
             }
-        )        
-        console.dir(newPatient)
+        )
         return parseStringify(newPatient)
     } catch (error) {
         console.error("An error occurred while creating a new patient:", error);

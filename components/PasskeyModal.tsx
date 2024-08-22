@@ -1,5 +1,5 @@
 'use client'
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
     AlertDialog,
     AlertDialogAction,
@@ -33,7 +33,7 @@ const PasskeyModal = () => {
     useEffect(() => {
         const accessKey = encryptedKey && decryptKey(encryptedKey)
         if (path) {
-            if (accessKey === process.env.NEXT_PUBLIC_ADMIN_PASSKEY) {
+            if (accessKey === process.env.NEXT_PUBLIC_ADMIN_PASSKEY!) {
                 setOpen(false)
                 router.push('/admin')
             } else {
@@ -55,7 +55,7 @@ const PasskeyModal = () => {
         }
     }
 
-    function closeModal() {
+    const closeModal = ()=> {
         setOpen(false)
         router.push('/')
     }

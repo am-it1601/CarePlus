@@ -14,15 +14,16 @@ import { useRouter } from "next/navigation"
 import { Doctors } from "@/constents"
 import { SelectItem } from "../ui/select"
 import { Status } from "@/types"
-import { CreateAppointment } from "@/lib/actions/appointment.action"
+import { CreateAppointment, updateAppointment } from "@/lib/actions/appointment.action"
 import { Appointment } from "@/types/appwrite.types"
 
 
-const AppointmentForm = ({ userId, patientId, type , appointment}: {
+const AppointmentForm = ({ userId, patientId, type, appointment, setOpen }: {
     userId: string,
     patientId: string,
-    type: 'create' | 'cancel' |'schedule',
-    appointment?: Appointment
+    type: 'create' | 'cancel' | 'schedule',
+    appointment?: Appointment,
+    setOpen?: (open: boolean) => void
 }) => {
     const [isLoading, setIsLoading] = useState(false)
     const router = useRouter()
@@ -33,7 +34,7 @@ const AppointmentForm = ({ userId, patientId, type , appointment}: {
         resolver: zodResolver(AppointmentFormValidation),
         defaultValues: {
             primaryPhysician: appointment ? appointment?.primaryPhysician : "",
-            schedule: appointment ? new Date(appointment?.schedule!): new Date(Date.now()),
+            schedule: appointment ? new Date(appointment?.schedule!) : new Date(Date.now()),
             reason: appointment ? appointment.reason : "",
             note: appointment?.note || "",
             cancellationReason: appointment?.cancellationReason || "",
@@ -48,18 +49,18 @@ const AppointmentForm = ({ userId, patientId, type , appointment}: {
             case 'schedule':
                 status = 'scheduled'
                 break;
-                case 'cancel':
+            case 'cancel':
                 status = 'cancelled'
                 break;
-            default: 
-            status ='pending'
+            default:
+                status = 'pending'
         }
 
         try {
             if (type === 'create' && patientId) {
                 const appointmentData = {
                     userId,
-                    patient:patientId,
+                    patient: patientId,
                     primaryPhysician: values.primaryPhysician,
                     schedule: new Date(values.schedule),
                     reason: values.reason!,
@@ -67,9 +68,32 @@ const AppointmentForm = ({ userId, patientId, type , appointment}: {
                     status: status as Status,
                 };
                 const newAppointment = await CreateAppointment(appointmentData)
+                console.log({newAppointment});
+                
                 if (newAppointment) {
                     form.reset();
                     router.push(`/patients/${userId}/new-appointment/success?appointmentId=${newAppointment.$id}`)
+                }
+            } else {
+                const appointmentToUpdate = {
+                    userId,
+                    appointmentId: appointment?.$id!,
+                    appointment: {
+                        primaryPhysician: values.primaryPhysician,
+                        schedule: new Date(values.schedule),
+                        status: status as Status,
+                        cancellationReason: values.cancellationReason,
+                    },
+                    type,
+                }
+                //@ts-ignore
+                const updatedAppointment = await updateAppointment(appointmentToUpdate);
+                
+
+                if (updatedAppointment) {
+                    setOpen && setOpen(false)
+                    form.reset()
+
                 }
             }
 
@@ -81,29 +105,31 @@ const AppointmentForm = ({ userId, patientId, type , appointment}: {
     }
 
     let buttonLabel
-    
+
     switch (type) {
         case 'cancel':
             buttonLabel = 'Cancel Appointment'
             break;
-            case 'create':
-                buttonLabel = 'Create Appointment'
-                break;    
-                case 'schedule':
+        case 'create':
+            buttonLabel = 'Create Appointment'
+            break;
+        case 'schedule':
             buttonLabel = 'Schedule Appointment'
             break;
-    
+
         default:
-            break;
+            buttonLabel = "Submit Appointment";
     }
 
     return (
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 flex-1">
-                <section className="mb-12 space-y-4">
-                    <h1 className="header">New Appointment</h1>
-                    <p className="text-dark-700">Request a new appointment in 10 seconds</p>
-                </section>
+                {type === 'create' && (
+                    <section className="mb-12 space-y-4">
+                        <h1 className="header">New Appointment</h1>
+                        <p className="text-dark-700">Request a new appointment in 10 seconds</p>
+                    </section>
+                )}
                 {type !== 'cancel' && (
                     <>
                         <CustomFormField control={form.control} name='primaryPhysician' label="Doctor" placeholder="Select a doctor" fieldType={FormFieldType.SELECT}>
@@ -156,7 +182,7 @@ const AppointmentForm = ({ userId, patientId, type , appointment}: {
                     />
                 )}
 
-                <SubmitButton isLoading={isLoading} className={`${type === 'cancel' ? 'shad-danger-btn' :'shad-primary-btn'} w-full`}>{buttonLabel}</SubmitButton>
+                <SubmitButton isLoading={isLoading} className={`${type === 'cancel' ? 'shad-danger-btn' : 'shad-primary-btn'} w-full`}>{buttonLabel}</SubmitButton>
             </form>
         </Form>
     )

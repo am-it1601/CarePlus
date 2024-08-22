@@ -6,11 +6,18 @@ import { SearchParamProps } from '@/types'
 import Image from 'next/image'
 import Link from 'next/link'
 import React from 'react'
+import * as Sentry from '@sentry/nextjs'
+import { getUser } from '@/lib/actions/patient.action'
+import { Appointment } from '@/types/appwrite.types'
 
-const Success = async ({ params: { userId }, searchParams }: SearchParamProps) => {
-    const appointmentId = (searchParams?.appointmentId as string) || ''
-    const appointment = await getAppointment(appointmentId);
-    const doctor = Doctors.find((doc)=> doc.name === appointment.primaryPhysician)
+const Success = async ({searchParams, params: { userId } }: SearchParamProps) => {
+    const appointmentId = (searchParams?.appointmentId as string) || ''  
+    const appointment: Appointment = await getAppointment(appointmentId)
+    const doctor = Doctors.find((doc)=> doc.name === appointment?.primaryPhysician)
+    const user = await getUser(userId)
+
+    Sentry.metrics.set('user_view_appointment-success', user)
+    
     return (
         <div className='flex h-screen max-h-screen px-[5%]'>
             <div className="success-img">
@@ -58,7 +65,7 @@ const Success = async ({ params: { userId }, searchParams }: SearchParamProps) =
                             width={24}
                         />
                         <p>
-                            {formatDateTime(appointment.schedule).dateTime}
+                            {formatDateTime(appointment?.schedule).dateTime}
                         </p>
                     </div>
                 </section>
